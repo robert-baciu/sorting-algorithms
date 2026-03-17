@@ -1,0 +1,384 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage[]{hyperref}
+\usepackage{pgfplots}
+\usepackage{tabularx}
+\usepackage[normalem]{ulem}
+
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{
+    compat=1.18,
+    every axis/.append style={
+        width=13cm,
+        height=8cm,
+        xmode=log, log basis x={2}, xlabel={Size ($n$)},
+        ymode=log, log basis y={10}, ylabel={Time (ns)},
+        grid=both,
+        enlargelimits=false,
+        legend pos=north west,
+        line width=1pt
+    },
+    table/x=size,
+    table/col sep=comma,
+    style red/.style={red, solid, opacity=0.8},
+    style orange/.style={orange, solid, opacity=0.8},
+    style yellow/.style={yellow!90!black, solid, opacity=0.8},
+    style green/.style={green!80!black, solid, opacity=0.8},
+    style cyan/.style={cyan!90!black, solid, opacity=0.8},
+    style violet/.style={violet, solid, opacity=0.8},
+    style magenta/.style={magenta, solid, opacity=0.8},
+    style intro/.style={black, dashed, opacity=0.8},
+    log y ticks with fixed point/.style={
+        yticklabel={
+            \pgfkeys{/pgf/fpu=true}
+            \pgfmathparse{exp(\tick)}%\
+            \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+            \pgfkeys{/pgf/fpu=false}
+        }
+    }
+}
+
+\newcommand{\Onn}{$O(n^2)$}
+\newcommand{\Onlogn}{$O(n \log n)$}
+\input{commands.tex}
+
+\title{Sorting Algorithms -- Data Structures}
+\author{Vlad-Robert Baciu}
+\date{March 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+\textit{There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors.} 
+-- \href{https://twitter.com/secretGeek/status/7269997868}{Leon Bambrick}
+
+Sorting might actually be one of the hard problems in computer science. Or at least it was in the 1900s.
+
+We all, excellent programmers, know better: if there's a convenient sorting function we can call in our programming language, be assured that we will not reinvent the wheel... But why not reinvent the wheel? Even worse, what if the environment we work in doesn't provide us with the implementation of a mystical black box that will sort our data?
+
+In this case study, I intend to compare the most widely known sorting algorithms and see how they perform on different datasets. Is it even possible to write an algorithm that gets close to the performance of Intro sort, the algorithm used by \texttt{std::sort}, without the help of twenty experienced Japanese engineers?
+
+
+\section{Algorithm selection}
+I have decided to benchmark these major and well known sorting algorithms:
+\begin{center}
+\setlength{\tabcolsep}{10pt}
+\begin{tabular}{lcc}
+    \toprule
+    \textbf{Algorithm} & \textbf{Time Complexity} & \textbf{Space} \\
+    \midrule
+    Bubble sort       & \Onn                  & $O(1)$ \\
+    Insertion sort    & \Onn                  & $O(1)$ \\
+    Selection sort    & \Onn                  & $O(1)$ \\
+    Merge sort        & \Onlogn               & $O(n)$ \\
+    Heap sort         & \Onlogn               & $O(1)$ \\
+    Quick sort        & \Onlogn               & $O(\log n)$ \\
+    Intro sort        & \Onlogn               & $O(\log n)$ \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Bubble, insertion and selection sort have a suboptimal time complexity, so we expect them to perform worse than merge, heap and quick sort, which have an optimal time complexity. Even if it might be tempting to decline the first three algorithms of any appreciation, one undisputed advantage lies in how simple they are to implement.
+
+Note: I did not implement Intro sort, instead, I plotted the \texttt{std::sort} implementation for reference.
+
+
+\newpage
+\section{Datasets}
+To properly benchmark these algorithms, the datasets must be varied and mimic real-world data. I developed four fill strategies:
+\begin{center}
+\setlength{\tabcolsep}{12pt}
+\begin{tabularx}{0.8\textwidth}{lX}
+    \toprule
+    \textbf{Fill}           & \textbf{Description} \\
+    \midrule
+    \textbf{Random}         & Random elements within a specified range. \\
+    \textbf{Sorted}         & Random elements sorted ascending. \\
+    \textbf{Reverse-sorted} & Random elements sorted descending. \\
+    \textbf{Constant}       & All elements equal to zero. \\
+    \bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+
+The range (density) of the random elements is as follows:
+\begin{center}
+\setlength{\tabcolsep}{12pt}
+\begin{tabularx}{0.8\textwidth}{llX}
+    \toprule
+    \textbf{Category}    & \textbf{Range} & \textbf{Description} \\
+    \midrule
+    \textbf{Wide}        & $[0, N]$        & Few duplicates. \\
+    \textbf{Dense}       & $[0, N/32]$     & Frequent duplicates. \\
+    \textbf{Logarithmic} & $[0, \log_2 N]$ & Extremely frequent duplicates. \\
+    \bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+
+Finally, I tested across three data types:
+\begin{center}
+\setlength{\tabcolsep}{12pt}
+\begin{tabularx}{0.8\textwidth}{lX}
+    \toprule
+    \textbf{Data type} & \textbf{Impact} \\
+    \midrule
+    \texttt{byte}      & Narrower data type; expecting improved performance due to less cache misses. \\
+    \addlinespace
+    \texttt{int}       & Standard choice. \\
+    \addlinespace
+    \texttt{double}    & Wider data type; expecting worsened performance due to \texttt{FPU}/\texttt{SIMD} comparisons overhead. \\
+    \bottomrule
+\end{tabularx}
+\end{center}
+
+
+\section{Environment}
+\texttt{C++} was the definitive choice, because of its performance and powerful templates. The source code was compiled with \texttt{GCC 15} and the \texttt{-O3} optimization flag.
+
+\newpage
+\section{Initial benchmarking} \label{sec:initial-bench}
+\benchmark{random-wide-int}{\textbf{Random} fill, \textbf{wide} density, \textbf{int} data}
+\newpage
+For $n \leq 8$, Bubble, Insertion and Selection sort perform better than Merge, Heap or Quick, because the latters have a bigger initial overhead. Merge sort can be seen as the worst performing algorithm for very small $n$.
+
+For $n \geq 32$, \Onlogn\ algorithms start to outperform the previously winning \Onn\ sorts.
+
+At $n = 128$, Bubble and Insertion sort are already $10$ times slower, but Selection sort is only 2 times slower than all \Onlogn\ algorithms.
+
+As $n$ grows huge, Merge, Heap and Quick sort all grow at the same rate, not far away from Intro sort. Quick sort wins over the other two, but not by much. Bubble and Insertion sort become almost $1000$ times slower, close to seconds in magnitude, yet Selection sort is "only" $100$ times slower.
+
+Selection sort is the winner of \Onn\ algorithms, yielding the best overall performance for small $n$, while also being significantly better than Bubble or Insertion sort as $n$ grows exponentially. A simple algorithm to implement without any pain, in any programming language, excluding x86 Assembly.
+
+For \Onlogn\ algorithms, I would declare Quick sort the winner. Even if Heap sort is somewhat better for very small $n$, Quick sort wins for large $n$.
+
+If your dataset is small- or medium-sized and you don't need that cutting edge performance, implement \textbf{Selection sort}. However, if your dataset is very large, you should go with \textbf{Quick sort}.
+
+
+\newpage
+\section{Quick sort -- Pivot selection}
+The performance of Quick sort is strongly linked to the \textit{pivot} selection strategy. For the previous benchmark, the middle element was silently chosen, but several other strategies exist: 
+\begin{itemize}
+    \item left-most element
+    \item middle element (used previously)
+    \item right-most element
+    \item median-of-three
+    \item random element
+\end{itemize}
+
+\pivotbenchmark{random-wide-int-pivot}{\textbf{Random} fill, \textbf{wide} density, \textbf{int} data}
+In this benchmark, all \textit{pivot} selection strategies are very close to one another in terms of performance, with the random strategy yielding the worst speed, because of the \texttt{rand()} function overhead.
+
+It might seem that one is free to choose from the other four strategies freely, but Quick sort has a worst case time complexity of \Onn\, so the \textit{pivot} selection is only insignificant for a random dataset!
+
+\begin{center}
+\begin{tikzpicture}
+\begin{groupplot}[
+    group style={
+        group size=1 by 3,
+        vertical sep=1.5cm
+    }
+]
+
+    \nextgroupplot[
+        title={\textbf{Sorted} fill, \textbf{wide} density, \textbf{int} data},
+        xlabel={},
+    ]
+        \addplot [style red]    table[y=left]   {data/sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Left}}
+        \addplot [style orange] table[y=middle] {data/sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Middle}}
+        \addplot [style green]  table[y=right]  {data/sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Right}}
+        \addplot [style cyan]   table[y=median] {data/sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Median}}
+        \addplot [style violet] table[y=random] {data/sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Random}}
+        \addplot [style intro]  table[y=intro]  {data/sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Intro}}
+
+    \nextgroupplot[
+        title={\textbf{Reverse-sorted} fill, \textbf{wide} density, \textbf{int} data},
+        xlabel={}
+    ]
+        \addplot [style red]    table[y=left]   {data/reverse-sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Left}}
+        \addplot [style orange] table[y=middle] {data/reverse-sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Middle}}
+        \addplot [style green]  table[y=right]  {data/reverse-sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Right}}
+        \addplot [style cyan]   table[y=median] {data/reverse-sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Median}}
+        \addplot [style violet] table[y=random] {data/reverse-sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Random}}
+        \addplot [style intro]  table[y=intro]  {data/reverse-sorted-wide-int-pivot.csv}; \addlegendentry{\textsf{Intro}}
+
+    \nextgroupplot[
+        title={\textbf{Constant} fill, \textbf{int} data},
+    ]
+        \addplot [style red]    table[y=left]   {data/constant-int-pivot.csv}; \addlegendentry{\textsf{Left}}
+        \addplot [style orange] table[y=middle] {data/constant-int-pivot.csv}; \addlegendentry{\textsf{Middle}}
+        \addplot [style green]  table[y=right]  {data/constant-int-pivot.csv}; \addlegendentry{\textsf{Right}}
+        \addplot [style cyan]   table[y=median] {data/constant-int-pivot.csv}; \addlegendentry{\textsf{Median}}
+        \addplot [style violet] table[y=random] {data/constant-int-pivot.csv}; \addlegendentry{\textsf{Random}}
+        \addplot [style intro]  table[y=intro]  {data/constant-int-pivot.csv}; \addlegendentry{\textsf{Intro}}
+
+\end{groupplot}
+\end{tikzpicture}
+\end{center}
+
+
+\newpage
+On sorted or reverse-sorted datasets, the Left and Right strategies are absolutely disastrous, showing how bad Quick sort can perform if the \textit{pivot} is chosen poorly. For $n \geq 2^{18}$, the huge recursion depth triggered a stack overflow and subsequently, the process segfaulted. These strategies were outperformed even by a Random \textit{pivot}.
+
+Median-of-three and Middle are equally good for sorted datasets, but Middle wins in a reverse-sorted benchmark.
+
+For constant datasets, all strategies perform, for all practical reasons, the same. The Left strategy seems to be somewhat faster compared to the rest.
+
+\textbf{Middle} is the winning strategy for Quick sort. This is the strategy that will be used throughout this paper, when referring Quick sort.
+
+
+\newpage
+\section{Hybrid sort}
+As shown in Section~\ref{sec:initial-bench}, Merge, Heap and Quick sort are not the most efficient algorithms for small $n$. A hybrid algorithm could be developed, one that uses an \Onlogn\ algorithm as usual, but when $n$ gets small, it switches to a simpler sort.
+
+Since Quick sort was the fastest for large datasets, I only needed to choose the algorithm for small $n$. Bubble sort was the worst one out of all \Onn\ sorts, so I had to choose from Insertion or Selection sort.
+
+Beside the algorithm itself, the \textbf{threshold} at which the algorithm quits using Quick sort impacts performance. I benchmarked several hybrid algorithms that pair Quick sort with Insertion or Selection sort at different thresholds: $\{4, 8, 12, 16, 20\}$.
+
+\begin{center}
+\begin{tikzpicture}
+\def\filename{data/random-wide-int-hybrid.csv}
+\begin{axis}[title={\textbf{Random} fill, \textbf{wide} density, \textbf{int} data}]
+    \addplot [style red]    table[y=hybrid-insertion-4]  {\filename}; \addlegendentry{$\textsf{Quick-Insertion}_{4}$}
+    \addplot [style orange] table[y=hybrid-insertion-8]  {\filename}; \addlegendentry{$\textsf{Quick-Insertion}_{8}$}
+    \addplot [style yellow] table[y=hybrid-insertion-12] {\filename}; \addlegendentry{$\textsf{Quick-Insertion}_{12}$}
+    \addplot [style green]  table[y=hybrid-insertion-16] {\filename}; \addlegendentry{$\textsf{Quick-Insertion}_{16}$}
+    \addplot [style cyan]   table[y=hybrid-insertion-20] {\filename}; \addlegendentry{$\textsf{Quick-Insertion}_{20}$}
+    \addplot [style intro]  table[y=intro]               {\filename}; \addlegendentry{\textsf{Intro}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\begin{center}
+\begin{tikzpicture}
+\def\filename{data/random-wide-int-hybrid.csv}
+\begin{axis}[title={\textbf{Random} fill, \textbf{wide} density, \textbf{int} data}]
+    \addplot [style red]    table[y=hybrid-selection-4]  {\filename}; \addlegendentry{$\textsf{Quick-Selection}_{4}$}
+    \addplot [style orange] table[y=hybrid-selection-8]  {\filename}; \addlegendentry{$\textsf{Quick-Selection}_{8}$}
+    \addplot [style yellow] table[y=hybrid-selection-12] {\filename}; \addlegendentry{$\textsf{Quick-Selection}_{12}$}
+    \addplot [style green]  table[y=hybrid-selection-16] {\filename}; \addlegendentry{$\textsf{Quick-Selection}_{16}$}
+    \addplot [style cyan]   table[y=hybrid-selection-20] {\filename}; \addlegendentry{$\textsf{Quick-Selection}_{20}$}
+    \addplot [style intro]  table[y=intro]               {\filename}; \addlegendentry{\textsf{Intro}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+$\textsf{Quick-Insertion}_{4}$ and $\textsf{Quick-Selection}_{8}$ seemed the most promising, so I put them up for a legendary battle!
+
+\begin{center}
+\begin{tikzpicture}
+\def\filename{data/random-wide-int-hybrid.csv}
+\begin{axis}[title={\textbf{Random} fill, \textbf{wide} density, \textbf{int} data}]
+    \addplot [style red]   table[y=hybrid-insertion-4] {\filename}; \addlegendentry{$\textsf{Quick-Insertion}_{4}$}
+    \addplot [style green] table[y=hybrid-selection-8] {\filename}; \addlegendentry{$\textsf{Quick-Selection}_{8}$}
+    \addplot [style intro] table[y=intro]              {\filename}; \addlegendentry{\textsf{Intro}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+The best hybrid is $\textsf{Quick-Selection}_{8}$: apply Quick sort if $N > 8$ and Selection sort otherwise.
+
+\begin{center}
+\begin{tikzpicture}
+\def\filename{data/random-wide-int-hybrid-ratios.csv}
+\begin{axis}[
+    title={\textbf{Random} fill, \textbf{wide} density, \textbf{int} data},
+    ymode=linear,
+    ylabel={Ratio to Intro sort},
+    log y ticks with fixed point,
+    legend pos=north east
+]
+    \addplot [style red]   table[y=ratio-quick-middle]       {\filename}; \addlegendentry{\textsf{Quick}}
+    \addplot [style green] table[y=ratio-hybrid-selection-8] {\filename}; \addlegendentry{\textsf{Hybrid}}
+    \addplot [style intro] table[y=ratio-intro]              {\filename}; \addlegendentry{\textsf{Intro}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\begin{center}
+\begin{tikzpicture}
+\def\filename{data/random-wide-int-hybrid-ratios-2.csv}
+\begin{axis}[
+    title={\textbf{Random} fill, \textbf{wide} density, \textbf{int} data},
+    ymax=1.25,
+    ylabel={$\frac{T_{Quick}}{T_{Hybrid}}$ ratio},
+    ymode=linear,
+    log y ticks with fixed point,
+    legend pos=south east
+]
+    \addplot [style green] table[y=ratio-quick-hybrid] {\filename}; \addlegendentry{\textsf{Quick/Hybrid}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+$\textsf{Quick-Selection}_{8}$ is the algorithm that will be used throughout this paper when referring to Hybrid sort.
+
+The plotted line is above $y = 1$, so our hybrid algorithm is in fact better than a plain Quick sort. It's around $3-5\%$ faster, when benchmarking against a random dataset.
+
+\newpage
+\section{More benchmarking}
+% TODO:
+% \benchmarkwithhybrid{random-wide-int}{\textbf{Random} fill, \textbf{wide} density, \textbf{int} data}
+\benchmarkwithhybrid{random-dense-int}{\textbf{Random} fill, \textbf{dense} density, \textbf{int} data}
+\benchmarkwithhybrid{random-log-int}{\textbf{Random} fill, \textbf{logarithmic} density, \textbf{int} data}
+
+\benchmarkwithhybrid{sorted-wide-int}{\textbf{Sorted} fill, \textbf{wide} density, \textbf{int} data}
+\benchmarkwithhybrid{sorted-dense-int}{\textbf{Sorted} fill, \textbf{dense} density, \textbf{int} data}
+\benchmarkwithhybrid{sorted-log-int}{\textbf{Sorted} fill, \textbf{logarithmic} density, \textbf{int} data}
+
+\benchmarkwithhybrid{reverse-sorted-wide-int}{\textbf{Reverse-sorted} fill, \textbf{wide} density, \textbf{int} data}
+\benchmarkwithhybrid{reverse-sorted-dense-int}{\textbf{Reverse-sorted} fill, \textbf{dense} density, \textbf{int} data}
+\benchmarkwithhybrid{reverse-sorted-log-int}{\textbf{Reverse-sorted} fill, \textbf{log} density, \textbf{int} data}
+
+\benchmarkwithhybrid{constant-int}{\textbf{Constant} fill, \textbf{int} data}
+
+\benchmarkwithhybrid{random-wide-byte}{\textbf{Random} fill, \textbf{wide} density, \textbf{byte} data}
+\benchmarkwithhybrid{random-wide-double}{\textbf{Random} fill, \textbf{wide} density, \textbf{double} data}
+
+\newpage
+For a sorted fill, Bubble sort has the best performance, outperforming all algorithms, including Intro sort. Insertion improves, so it gets closer to Selection sort it previously was. If the density is wide or dense, Hybrid sort is also a bit slower than Merge sort, but it always wins over Quick sort.
+
+If the fill is reverse-sorted, unfortunately Bubble and Insertion behave equally bad, and if the density is wide, the performance of Selection sort also degrades. Heap sort is the worst out of all \Onlogn\ sorts, followed by Quick sort. Merge sort and Hybrid sort battle, with Hybrid winning on wide and logarithmic densities, but losing on dense.
+
+When the dataset is constant, Bubble sort beats the others again. Heap sort outperforms Hybrid and Intro sort in this case. Hybrid gets 4th place, after Bubble, Heap and Intro sort.
+
+Some remarks can be made when testing on other primitives. If sorting \textbf{bytes}, both \Onn\ and \Onlogn\ algorithms tend to group together faster. Selection sort performs almost as bad as Bubble and Insertion sort. As $n$ grows, Hybrid sort gets very, very close to the performance of Intro sort. For the \textbf{double} data type, all \Onlogn\ are very close to Intro sort in terms of performance.
+
+\medskip
+
+All of the six algorithms that I have benchmarked have proved themselves useful in some way. Bubble performs best on sorted or constant datasets. Selection sort is a nice overall choice for small- or medium-sized datasets. Merge is nice because of its simplicity, while being of optimal time complexity. Heap sort is interesting because of its rather unique implementation idea. Quick sort is, well, very quick in general, and if you are careful with the \textit{pivot} choice, the performance is notable. The most uninteresting one could be Insertion sort, but it's still a simple and interesting algorithm.
+
+I might not have beaten Intro sort, as implemented in \texttt{std::sort}, but I got pretty close with my hybrid algorithm. It turns out you don't need twenty Japanese engineers for such performance.
+
+
+% TODO: Compiler optimization levels
+
+
+\newpage
+\section{Benchmarking accuracy}
+\begin{itemize}
+    \item The recorded sorting time was the minimum of 25 runs
+    \item Before each benchmark, the sort was ran 3 times to prime the system
+    \item No other unnecessary apps or programs were running when benchmarking
+\end{itemize}
+
+
+\section{To be continued...}
+This study is far from complete. As with any problem that arises in engineering, there is no simple answer, and the choice depends on many factors.
+
+I only took into account the execution time, but I didn't consider the number of comparisons and swaps for each algorithm. If every swap matters, you might want to implement Selection sort. If you just want the speed, go on and use Quick sort. Does your dataset have a huge chance of being sorted? Use Bubble sort. If you are lazy, use Bubble sort.
+
+Space critical you say? Don't you think about Merge sort. You can also try and implement a Hybrid sort if you want to. Me? I'll ride with Bogosort.
+
+In the end, the choice is yours. Don't overthink it, and don't be scared of choosing.
+
+Turns out this wasn't about sorting algorithms.
+
+\end{document}

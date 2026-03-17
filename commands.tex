@@ -1,0 +1,102 @@
+\newcommand{\benchmark}[2]{
+\begin{center}
+\begin{tikzpicture}
+    \begin{groupplot}[
+        group style={
+            group size=1 by 3,
+            vertical sep=1cm
+        }
+    ]
+
+    \nextgroupplot[title={#2}, xlabel={}, ylabel={}]
+        \addplot [style red]    table[y=bubble]    {data/#1-all.csv}; \addlegendentry{\textsf{Bubble}}
+        \addplot [style orange] table[y=insertion] {data/#1-all.csv}; \addlegendentry{\textsf{Insertion}}
+        \addplot [style yellow] table[y=selection] {data/#1-all.csv}; \addlegendentry{\textsf{Selection}}
+        \addplot [style green]  table[y=merge]     {data/#1-all.csv}; \addlegendentry{\textsf{Merge}}
+        \addplot [style cyan]   table[y=heap]      {data/#1-all.csv}; \addlegendentry{\textsf{Heap}}
+        \addplot [style violet] table[y=quick]     {data/#1-all.csv}; \addlegendentry{\textsf{Quick}}
+        \addplot [style intro]  table[y=intro]       {data/#1-all.csv}; \addlegendentry{\textsf{Intro}}
+
+    \nextgroupplot[xlabel={}]
+        \addplot [style red]    table[y=bubble]    {data/#1-nsq.csv}; \addlegendentry{\textsf{Bubble}}
+        \addplot [style orange] table[y=insertion] {data/#1-nsq.csv}; \addlegendentry{\textsf{Insertion}}
+        \addplot [style yellow] table[y=selection] {data/#1-nsq.csv}; \addlegendentry{\textsf{Selection}}
+        \addplot [style intro]  table[y=intro]       {data/#1-nsq.csv}; \addlegendentry{\textsf{Intro}}
+
+    \nextgroupplot[ylabel={}]
+        \addplot [style green]  table[y=merge] {data/#1-nlogn.csv}; \addlegendentry{\textsf{Merge}}
+        \addplot [style cyan]   table[y=heap]  {data/#1-nlogn.csv}; \addlegendentry{\textsf{Heap}}
+        \addplot [style violet] table[y=quick] {data/#1-nlogn.csv}; \addlegendentry{\textsf{Quick}}
+        \addplot [style intro]  table[y=intro]   {data/#1-nlogn.csv}; \addlegendentry{\textsf{Intro}}
+
+    \end{groupplot}
+\end{tikzpicture}
+\end{center}
+}
+
+\newcommand{\benchmarkwithhybrid}[2]{
+\begin{center}
+\begin{tikzpicture}
+    \begin{groupplot}[
+        group style={
+            group size=1 by 3,
+            vertical sep=1cm
+        }
+    ]
+
+    \nextgroupplot[title={#2}, xlabel={}, ylabel={}]
+        \addplot [style red]     table[y=bubble]    {data/#1-all.csv}; \addlegendentry{\textsf{Bubble}}
+        \addplot [style orange]  table[y=insertion] {data/#1-all.csv}; \addlegendentry{\textsf{Insertion}}
+        \addplot [style yellow]  table[y=selection] {data/#1-all.csv}; \addlegendentry{\textsf{Selection}}
+        \addplot [style green]   table[y=merge]     {data/#1-all.csv}; \addlegendentry{\textsf{Merge}}
+        \addplot [style cyan]    table[y=heap]      {data/#1-all.csv}; \addlegendentry{\textsf{Heap}}
+        \addplot [style violet]  table[y=quick]     {data/#1-all.csv}; \addlegendentry{\textsf{Quick}}
+        \addplot [style magenta] table[y=hybrid]    {data/#1-all.csv}; \addlegendentry{\textsf{Hybrid}}
+        \addplot [style intro]   table[y=intro]     {data/#1-all.csv}; \addlegendentry{\textsf{Intro}}
+
+    \nextgroupplot[xlabel={}]
+        \addplot [style red]    table[y=bubble]    {data/#1-nsq.csv}; \addlegendentry{\textsf{Bubble}}
+        \addplot [style orange] table[y=insertion] {data/#1-nsq.csv}; \addlegendentry{\textsf{Insertion}}
+        \addplot [style yellow] table[y=selection] {data/#1-nsq.csv}; \addlegendentry{\textsf{Selection}}
+        \addplot [style intro]  table[y=intro]     {data/#1-nsq.csv}; \addlegendentry{\textsf{Intro}}
+
+    \nextgroupplot[ylabel={}]
+        \addplot [style green]   table[y=merge]  {data/#1-nlogn.csv}; \addlegendentry{\textsf{Merge}}
+        \addplot [style cyan]    table[y=heap]   {data/#1-nlogn.csv}; \addlegendentry{\textsf{Heap}}
+        \addplot [style violet]  table[y=quick]  {data/#1-nlogn.csv}; \addlegendentry{\textsf{Quick}}
+        \addplot [style magenta] table[y=hybrid] {data/#1-nlogn.csv}; \addlegendentry{\textsf{Hybrid}}
+        \addplot [style intro]   table[y=intro]  {data/#1-nlogn.csv}; \addlegendentry{\textsf{Intro}}
+
+    \end{groupplot}
+\end{tikzpicture}
+\end{center}
+}
+
+\newcommand{\pivotbenchmark}[2]{
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[title={#2}]
+    \addplot [style red]    table[y=left]   {data/#1.csv}; \addlegendentry{\textsf{Left}}
+    \addplot [style orange] table[y=middle] {data/#1.csv}; \addlegendentry{\textsf{Middle}}
+    \addplot [style green]  table[y=right]  {data/#1.csv}; \addlegendentry{\textsf{Right}}
+    \addplot [style cyan]   table[y=median] {data/#1.csv}; \addlegendentry{\textsf{Median}}
+    \addplot [style violet] table[y=random] {data/#1.csv}; \addlegendentry{\textsf{Random}}
+    \addplot [style intro]  table[y=intro]  {data/#1.csv}; \addlegendentry{\textsf{Intro}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+}
+
+\newcommand{\hybridbenchmark}[2]{
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[title={#2}]
+    \addplot [style red]    table[y=hybrid-insertion-4] {data/#1.csv}; \addlegendentry{\textsf{Quick-Insertion_4}}
+    \addplot [style orange] table[y=hybrid-insertion-8] {data/#1.csv}; \addlegendentry{\textsf{Quick-Insertion_8}}
+    \addplot [style green]  table[y=hybrid-selection-4] {data/#1.csv}; \addlegendentry{\textsf{Selection @ 4}}
+    \addplot [style cyan]   table[y=hybrid-selection-8] {data/#1.csv}; \addlegendentry{\textsf{Selection @ 8}}
+    \addplot [style intro]  table[y=intro]              {data/#1.csv}; \addlegendentry{\textsf{Intro}}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+}
